@@ -2,7 +2,10 @@ const { MongoClient } = require('mongodb');
 const dotenv = require('dotenv').config();
 
 
-const client = new MongoClient(process.env.CONNECTION_URI, { useNewUrlParser: true });
+const client = new MongoClient(process.env.CONNECTION_URI, { 
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
 client.connect((err, client) => {
     if (err) {
         res.status(500).json({
