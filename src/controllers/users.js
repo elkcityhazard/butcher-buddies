@@ -4,6 +4,7 @@ const Post = require('../models/Post');
 const connectDB = require('../utils/db');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { ObjectID } = require('mongodb');
 
 exports.createUser = async (req, res, next) => {
   try {
@@ -75,6 +76,7 @@ exports.loginUser = async (req, res) => {
       { expiresIn: '5 days' },
       (err, token) => {
         if (err) throw err;
+        localStorage.setItem('token', token);
         res.json({
           token,
         });
@@ -89,10 +91,10 @@ exports.loginUser = async (req, res) => {
 
 exports.createPost = async (req, res) => {
     const user = req.user;
+    console.log(user);
   const { author, title, body } = req.body;
   const post = new Post(author, title, body);
-  post.author = user;
-  
+  post.author = user.id;
   jwt.verify(
     req.header('x-auth-token'),
     process.env.JWTSECRET,
@@ -116,15 +118,15 @@ exports.createPost = async (req, res) => {
 exports.getAuthorPosts = async (req, res) => {
     try {
         const user = req.user;
-        const db = connectDB.db('eat-my-balls').collection('posts');
-
-        const posts = await db.find( {
-        author: user
+        const db = await connectDB.db('eat-my-balls').collection('posts');
+        const posts = await db.find({
+          author: user.id
+        }).toArray(function(err, result) {
+          if (err) throw err;
+          let postsClone = {...result}
+         res.status(200).send(postsClone);
         })
-        return res.status(200).json({
-            posts
-        })
-    }
+           }
     catch (err) {
         return res.status(500).json({
             msg: err.message
