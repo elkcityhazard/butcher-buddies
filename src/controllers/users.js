@@ -76,7 +76,7 @@ exports.loginUser = async (req, res) => {
       { expiresIn: '5 days' },
       (err, token) => {
         if (err) throw err;
-        localStorage.setItem('token', token);
+        // localStorage.setItem('token', token);
         res.json({
           token,
         });
@@ -90,8 +90,7 @@ exports.loginUser = async (req, res) => {
 };
 
 exports.createPost = async (req, res) => {
-    const user = req.user;
-    console.log(user);
+  const user = req.user;
   const { author, title, body } = req.body;
   const post = new Post(author, title, body);
   post.author = user.id;
@@ -102,13 +101,16 @@ exports.createPost = async (req, res) => {
       if (err) {
         res.sendStatus(403);
       } else {
-        const postDB = await connectDB.db('eat-my-balls').collection('posts').insertOne(post);
+        const postDB = await connectDB
+          .db('eat-my-balls')
+          .collection('posts')
+          .insertOne(post);
         res.json({
           msg: 'post created',
           post: {
-              title: title,
-              body: body
-          }
+            title: title,
+            body: body,
+          },
         });
       }
     }
@@ -116,20 +118,70 @@ exports.createPost = async (req, res) => {
 };
 
 exports.getAuthorPosts = async (req, res) => {
-    try {
-        const user = req.user;
-        const db = await connectDB.db('eat-my-balls').collection('posts');
-        const posts = await db.find({
-          author: user.id
-        }).toArray(function(err, result) {
-          if (err) throw err;
-          let postsClone = {...result}
-         res.status(200).send(postsClone);
-        })
-           }
-    catch (err) {
-        return res.status(500).json({
-            msg: err.message
-        })
-    }
+  try {
+    const user = req.user;
+    const db = await connectDB.db('eat-my-balls').collection('posts');
+    const posts = await db
+      .find({
+        author: user.id,
+      })
+      .toArray(function (err, result) {
+        if (err) throw err;
+        let postsClone = { ...result };
+        res.status(200).send(postsClone);
+      });
+  } catch (err) {
+    return res.status(500).json({
+      msg: err.message,
+    });
+  }
+};
+
+exports.updatePost = async (req, res) => {
+  try {
+    const user = req.user;
+    const {_id, title, body} = req.body;
+    const id = new ObjectID(_id);
+    const db = await connectDB.db('eat-my-balls').collection('posts');
+    await db.findOneAndUpdate(
+      {
+        _id: id
+      },
+      {$set: 
+        { 
+        title: title,
+        body: body
+      }},
+      {new: true, upsert: true, returnOriginal: false}
+    );
+    res.status(200).json({
+      _id: _id,
+      title: title,
+      body: body
+    });
+  } catch (err) {
+    return res.status(500).json({
+      msg: err.message,
+    });
+  }
+};
+
+exports.deleteSinglePost = async (req, res) => {
+  try {
+    const user = req.user;
+  const {_id } = req.body;
+  const id = new ObjectID(_id);
+  const db = await connectDB.db('eat-my-balls').collection('posts');
+  await db.findOneAndDelete({
+    _id: id
+  })
+  res.status(200).json({
+    id: _id
+  })
+  }
+  catch (err) {
+    return res.status(500).json({
+      msg: err.message
+    })
+  }
 }

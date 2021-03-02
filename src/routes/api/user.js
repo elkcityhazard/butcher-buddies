@@ -5,11 +5,15 @@ const auth = require('../../utils/auth');
 
 router.post('/', userController.createUser);
 
-router.post('/login', auth, userController.loginUser);
+router.post('/login', userController.loginUser);
 
-router.post('/new-post', auth, userController.createPost);
+router.post('/post', auth, userController.createPost);
 
-router.post('/login/get-posts', auth, userController.getAuthorPosts)
+router.patch('/post', auth, userController.updatePost);
+
+router.post('/login/get-posts', auth, userController.getAuthorPosts);
+
+router.delete('/post', auth, userController.deleteSinglePost);
 
 
 module.exports = router;
