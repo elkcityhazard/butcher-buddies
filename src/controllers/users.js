@@ -140,24 +140,33 @@ exports.getAuthorPosts = async (req, res) => {
 exports.updatePost = async (req, res) => {
   try {
     const user = req.user;
-    const {_id, title, body} = req.body;
+    const { _id, title, body } = req.body;
     const id = new ObjectID(_id);
     const db = await connectDB.db('eat-my-balls').collection('posts');
+    const searchResult = await db.findOne({
+      _id: id
+    });
+    if (!searchResult) {
+      return res.status(400).json({
+        msg: "post not found"
+      })
+    }
     await db.findOneAndUpdate(
       {
-        _id: id
+        _id: id,
       },
-      {$set: 
-        { 
-        title: title,
-        body: body
-      }},
-      {new: true, upsert: true, returnOriginal: false}
+      {
+        $set: {
+          title: title,
+          body: body,
+        },
+      },
+      { new: true, upsert: true, returnOriginal: false }
     );
     res.status(200).json({
       _id: _id,
       title: title,
-      body: body
+      body: body,
     });
   } catch (err) {
     return res.status(500).json({
@@ -169,19 +178,27 @@ exports.updatePost = async (req, res) => {
 exports.deleteSinglePost = async (req, res) => {
   try {
     const user = req.user;
-  const {_id } = req.body;
-  const id = new ObjectID(_id);
-  const db = await connectDB.db('eat-my-balls').collection('posts');
-  await db.findOneAndDelete({
-    _id: id
-  })
-  res.status(200).json({
-    id: _id
-  })
-  }
-  catch (err) {
+    const { _id } = req.body;
+    const id = new ObjectID(_id);
+    const db = await connectDB.db('eat-my-balls').collection('posts');
+    const searchResult = await db.findOne({
+      _id: id
+    });
+    if (!searchResult) {
+      return res.status(400).json({
+        msg: "post not found"
+      })
+    }
+    await db.findOneAndDelete({
+      _id: id,
+    });
+    res.status(200).json({
+      msg: "deleted the following post:",
+      id: _id,
+    });
+  } catch (err) {
     return res.status(500).json({
-      msg: err.message
-    })
+      msg: err.message,
+    });
   }
-}
+};

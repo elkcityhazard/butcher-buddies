@@ -20,7 +20,7 @@ class User {
         name: this.name,
         email: this.email,
         password: password,
-        errors: this.errors
+        errors: this.errors,
       })
       .then(function (res) {
         console.log(res.insertedId);
