@@ -15,5 +15,6 @@ router.post('/login/get-posts', auth, userController.getAuthorPosts);
 
 router.delete('/post', auth, userController.deleteSinglePost);
 
+router.delete('/post/all', auth, userController.deleteAllPosts);
 
 module.exports = router;

@@ -202,3 +202,30 @@ exports.deleteSinglePost = async (req, res) => {
     });
   }
 };
+
+
+exports.deleteAllPosts = async (req, res) => {
+  try {
+    const user = req.user;
+    const db = await connectDB.db('eat-my-balls').collection('posts');
+    const searchResult = await db.findOne({
+      author: user.id
+    });
+    if (!searchResult) {
+      return res.status(400).json({
+        msg: "post not found"
+      })
+    }
+    await db.deleteMany({
+      author: user.id
+    });
+    res.status(200).json({
+      msg: "deleted all posts for the following user:",
+      id: user.id,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      msg: err.message,
+    });
+  }
+}
