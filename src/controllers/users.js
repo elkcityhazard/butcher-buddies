@@ -6,6 +6,12 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { ObjectID } = require('mongodb');
 
+exports.loadHomePage = async (req, res, next) => {
+  res.render('baseof', {
+    title: "Butcher Buddies Home Page"
+  });
+}
+
 exports.createUser = async (req, res, next) => {
   try {
     const { name, email, password, errors } = req.body;
@@ -34,12 +40,9 @@ exports.createUser = async (req, res, next) => {
       { expiresIn: '5 days' },
       (err, token) => {
         if (err) throw err;
-        res.json({
-          token,
-        });
+        res.json({token});
       }
     );
-    // res.send(user);
   } catch (err) {
     return res.status(500).json({
       msg: err.error,
@@ -48,6 +51,7 @@ exports.createUser = async (req, res, next) => {
 };
 
 exports.loginUser = async (req, res) => {
+ 
   const { email, password } = req.body;
   const db = await connectDB.db('eat-my-balls').collection('users');
   try {
@@ -76,10 +80,12 @@ exports.loginUser = async (req, res) => {
       { expiresIn: '5 days' },
       (err, token) => {
         if (err) throw err;
-        // localStorage.setItem('token', token);
-        res.json({
-          token,
-        });
+        // res.json({token})
+        res.render('loggedIn', {
+          token: token,
+          title: "Welcome",
+          email: email
+        })
       }
     );
   } catch (err) {
