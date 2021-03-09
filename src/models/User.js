@@ -2,10 +2,11 @@ const connectDB = require('../utils/db');
 const bcrypt = require('bcryptjs');
 
 class User {
-  constructor(name, email, password) {
+  constructor(name, email, password, _id) {
     this.name = name;
     this.email = email;
     this.password = password;
+    this._id = _id;
     this.errors = [];
   }
 
@@ -25,6 +26,17 @@ class User {
       .then(function (res) {
         console.log(res.insertedId);
       });
+  }
+
+  async getUserPosts(_id) {
+    await connectDB.db('eat-my-balls').collection('posts').find({
+      author: _id
+    },
+    (err, res) => {
+      if (err) throw err;
+      return res
+  })
+ 
   }
 }
 

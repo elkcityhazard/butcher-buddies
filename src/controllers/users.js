@@ -6,16 +6,11 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { ObjectID } = require('mongodb');
 
-exports.loadHomePage = async (req, res, next) => {
-  res.render('baseof', {
-    title: "Butcher Buddies Home Page"
-  });
-}
-
 exports.createUser = async (req, res, next) => {
   try {
-    const { name, email, password, errors } = req.body;
-    const user = await new User(name, email, password, errors);
+    const { name, email, password, errors} = req.body;
+       const user = await new User(name, email, password, errors);
+    const id = new ObjectID();
     const checkedUser = await connectDB
       .db('eat-my-balls')
       .collection('users')
@@ -30,9 +25,7 @@ exports.createUser = async (req, res, next) => {
     await user.save();
 
     const payload = {
-      user: {
-        id: user._id,
-      },
+      user: id
     };
     jwt.sign(
       payload,
@@ -40,7 +33,7 @@ exports.createUser = async (req, res, next) => {
       { expiresIn: '5 days' },
       (err, token) => {
         if (err) throw err;
-        res.json({token});
+        res.json({token})
       }
     );
   } catch (err) {
@@ -51,9 +44,18 @@ exports.createUser = async (req, res, next) => {
 };
 
 exports.loginUser = async (req, res) => {
- 
-  const { email, password } = req.body;
+   const { email, password } = req.body;
   const db = await connectDB.db('eat-my-balls').collection('users');
+  const user = await db.findOne({
+email: email
+  });
+  console.log("user: ",user);
+  const posts = await connectDB.db('eat-my-balls').collection('posts').find({author: user.id}).toArray(function(err, res) {
+            if (err) throw err;
+            let postArray = {...res};
+            return postArray;
+                      });
+                      console.log(posts);
   try {
     let user = await db.findOne({
       email: email,
@@ -71,23 +73,25 @@ exports.loginUser = async (req, res) => {
     }
     const payload = {
       user: {
-        id: user._id,
+        id: user.id,
       },
     };
     jwt.sign(
       payload,
       process.env.JWTSECRET,
       { expiresIn: '5 days' },
-      (err, token) => {
+      async (err, token, posts) => {
         if (err) throw err;
-        // res.json({token})
-        res.render('loggedIn', {
+        req.header.authorization = token;
+        return res.json({token});
+        res.status(200).render('loggedIn', {
           token: token,
-          title: "Welcome",
-          email: email
+          title: `Hello ${user.email}`,
+          email: `${user.email}`,
+          posts: posts
+          
         })
-      }
-    );
+  })
   } catch (err) {
     return res.status(500).json({
       msg: err.message,
@@ -96,32 +100,34 @@ exports.loginUser = async (req, res) => {
 };
 
 exports.createPost = async (req, res) => {
-  const user = req.user;
-  const { author, title, body } = req.body;
+   const { author, title, body } = req.body;
   const post = new Post(author, title, body);
-  post.author = user.id;
-  jwt.verify(
-    req.header('x-auth-token'),
-    process.env.JWTSECRET,
-    async (err, data) => {
-      if (err) {
-        res.sendStatus(403);
-      } else {
-        const postDB = await connectDB
+  post.author = req.user
+          const postDB = await connectDB
           .db('eat-my-balls')
           .collection('posts')
           .insertOne(post);
-        res.json({
-          msg: 'post created',
-          post: {
-            title: title,
-            body: body,
-          },
-        });
-      }
-    }
-  );
-};
+        res.json(post);
+      };
+
+exports.getPost = async (req, res) => {
+  const {postID} = req.params;
+  const parsedID = new ObjectID(postID);
+  try {
+  const post = await connectDB.db('eat-my-balls').collection('posts').findOne({
+    _id: parsedID
+  }).then((data) => {
+      return data;
+  })
+  res.status(200).json({post})
+  } 
+  catch (err) {
+    return res.status(500).json({
+      msg: err.message
+    })
+  }
+  
+}
 
 exports.getAuthorPosts = async (req, res) => {
   try {

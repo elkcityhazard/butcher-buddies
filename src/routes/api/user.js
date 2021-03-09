@@ -11,6 +11,8 @@ router.post('/post', auth, userController.createPost);
 
 router.patch('/post', auth, userController.updatePost);
 
+router.get('/posts/:postID', auth, userController.getPost);
+
 router.post('/login/get-posts', auth, userController.getAuthorPosts);
 
 router.delete('/post', auth, userController.deleteSinglePost);
