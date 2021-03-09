@@ -9,9 +9,8 @@ const { ObjectID } = require('mongodb');
 exports.createUser = async (req, res, next) => {
   try {
     const { name, email, password, errors} = req.body;
-       const user = await new User(name, email, password, errors);
-    const id = new ObjectID();
-    const checkedUser = await connectDB
+       const user = new User(name, email, password, errors);
+        const checkedUser = await connectDB
       .db('eat-my-balls')
       .collection('users')
       .findOne({
@@ -23,10 +22,13 @@ exports.createUser = async (req, res, next) => {
       });
     }
     await user.save();
-
+    const id = await connectDB.db('eat-my-balls').collection('users').findOne({
+      email: email
+    }).then(res => {return res._id})
     const payload = {
       user: id
     };
+    console.log(payload)
     jwt.sign(
       payload,
       process.env.JWTSECRET,
@@ -44,22 +46,13 @@ exports.createUser = async (req, res, next) => {
 };
 
 exports.loginUser = async (req, res) => {
-   const { email, password } = req.body;
+  const { email, password } = req.body;
   const db = await connectDB.db('eat-my-balls').collection('users');
-  const user = await db.findOne({
-email: email
-  });
-  console.log("user: ",user);
-  const posts = await connectDB.db('eat-my-balls').collection('posts').find({author: user.id}).toArray(function(err, res) {
-            if (err) throw err;
-            let postArray = {...res};
-            return postArray;
-                      });
-                      console.log(posts);
-  try {
+    try {
     let user = await db.findOne({
       email: email,
     });
+    console.log("user: ", user._id)
     if (!user) {
       return res.status(400).json({
         msg: 'Invalid Credentials',
@@ -72,23 +65,23 @@ email: email
       });
     }
     const payload = {
-      user: {
-        id: user.id,
-      },
+        id: user._id
     };
     jwt.sign(
       payload,
       process.env.JWTSECRET,
       { expiresIn: '5 days' },
-      async (err, token, posts) => {
+      async (err, token) => {
         if (err) throw err;
         req.header.authorization = token;
-        return res.json({token});
+        let posts = connectDB.db('eat-my-balls').collection('posts').find({
+              author: payload.id
+            })
+        console.log("payload:", payload)
         res.status(200).render('loggedIn', {
           token: token,
           title: `Hello ${user.email}`,
           email: `${user.email}`,
-          posts: posts
           
         })
   })
@@ -100,7 +93,8 @@ email: email
 };
 
 exports.createPost = async (req, res) => {
-   const { author, title, body } = req.body;
+  console.log(req.body);
+  const { author, title, body } = req.body;
   const post = new Post(author, title, body);
   post.author = req.user
           const postDB = await connectDB
@@ -112,10 +106,10 @@ exports.createPost = async (req, res) => {
 
 exports.getPost = async (req, res) => {
   const {postID} = req.params;
-  const parsedID = new ObjectID(postID);
+  
   try {
   const post = await connectDB.db('eat-my-balls').collection('posts').findOne({
-    _id: parsedID
+    _id: postID
   }).then((data) => {
       return data;
   })

@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../../controllers/users');
 const auth = require('../../utils/auth');
+const cors = require('cors');
+
+router.use(cors());
 
 router.post('/', userController.createUser);
 
